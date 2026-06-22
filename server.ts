@@ -12,14 +12,10 @@ const PORT = 3000;
 // Setup JSON body parser with increased limits for Base64 receipt images
 app.use(express.json({ limit: "15mb" }));
 
-// Middleware to set secure, SameSite=None, and Partitioned (CHIPS) security cookies
-// required for robust operation in modern mobile browsers and cross-site iframe environments.
+// Standard security headers and CORS helpers
 app.use((req, res, next) => {
-  res.setHeader(
-    "Set-Cookie",
-    "snapspend_security_cookie=secured_iframe_session; Path=/; Secure; SameSite=None; Partitioned; HttpOnly; Max-Age=2592000"
-  );
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
   next();
 });
 
@@ -212,6 +208,89 @@ Requirements:
     res.status(500).json({
       success: false,
       error: "Failed to parse receipt. Please make sure the receipt is clear, readable, and fully captured.",
+      details: error?.message || error
+    });
+  }
+});
+
+// API endpoint to process financial assistant chats using Gemini Flash
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { messages, spendingSummary } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ success: false, error: "Missing or invalid chat messages array." });
+    }
+
+    const aiClient = getGenAI();
+
+    // If Gemini Client is unavailable, perform high-fidelity smart fallback responses
+    if (!aiClient) {
+      console.log("[SnapSpend Chat] Gemini API Key missing or default. Falling back to rule-based financial reasoning engine.");
+      
+      const lastUserMsg = messages[messages.length - 1]?.content?.toLowerCase() || "";
+      let reply = "";
+
+      if (lastUserMsg.includes("grocery") || lastUserMsg.includes("groceries") || lastUserMsg.includes("food") || lastUserMsg.includes("eat")) {
+        reply = "🛒 **Tips for Reducing Grocery & Food Spending:**\n\n1. **Meal Planning**: Plan meals ahead around weekly sales and construct a rigid boundary-list before visiting the market.\n2. **Store Brands**: Prioritize generic store-label brands; they often carry the same quality for 20-30% lower prices.\n3. **Batch Cook & Freeze**: Cook in bulk to reduce unit raw ingredient cost and curb the temptation to order takeout when exhausted.";
+      } else if (lastUserMsg.includes("goal") || lastUserMsg.includes("save") || lastUserMsg.includes("saving") || lastUserMsg.includes("set")) {
+        reply = "🎯 **Setting and Reaching Financial Goals:**\n\n1. **Use the SMART framework**: Set specific, measurable goals (e.g., 'Save $500 for emergency reserve over the next 4 months' rather than 'Save more cash').\n2. **Automate**: Direct deposit or trigger automated periodic transfers to your savings vault directly on payday.\n3. **Visual Progress Tracker**: Keep a constant eye on budgets. In SnapSpend, you can scan everyday receipts to watch your progress against category budget targets in real-time!";
+      } else if (lastUserMsg.includes("reduce") || lastUserMsg.includes("spend") || lastUserMsg.includes("cut") || lastUserMsg.includes("expense")) {
+        reply = "📉 **Actionable Ideas to Cut Hidden Expenses:**\n\n1. **Review Subscriptions**: Audit recurring monthly streaming or service accounts and disable those unused in the last 30 days.\n2. **The 24-Hour Rule**: Wait a full 24 hours before completing non-essential purchases above $50 to prevent impulsive retail therapy.\n3. **Curb Convenience Markup**: Brew coffee at home, pack lunches, and use cashbacks or grocery discounts to build slow, steady savings.";
+      } else if (spendingSummary && typeof spendingSummary === "object") {
+        const totalSpent = spendingSummary.totalSpent || 0;
+        const count = spendingSummary.receiptCount || 0;
+        reply = `📊 **Let's review your spending report:**\n\nSo far, you have logged **${count} paper receipt(s)** totaling **$${totalSpent.toFixed(2)}**. To reduce overall spending:\n\n1. Target categories with high percentages compared to their budget limits.\n2. Let's start with a small savings goal! Try cutting 10% from your highest category this month to build a micro-reserve. Which category are you most interested in focusing on first?`;
+      } else {
+        reply = "👋 **Welcome to your SnapSpend AI Financial Companion!**\n\nI can help you build budgeting skills, reduce everyday spending, and define smart financial targets.\n\nAsk me about:\n- \"How do I reduce grocery spending?\"\n- \"How do I get started with setting a savings goal?\"\n- \"Give me tips for cutting monthly conveniences.\"\n\n*Note: Connect your Gemini API Key in the Settings > Secrets menu to activate full generative dialogue capabilities!*";
+      }
+
+      return res.json({
+        success: true,
+        text: reply,
+        mode: "mock",
+        warning: "Running in offline financial assistant mode. Connect your Gemini API Key in Settings > Secrets to unlock full, personalized AI reasoning!"
+      });
+    }
+
+    console.log("[SnapSpend Chat] Dispatching dialogue turns to Gemini Flash...");
+
+    // Map conversation messages to Gemini chat API contents input format
+    const contents = messages.map((m: any) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }]
+    }));
+
+    // Build context-rich prompt prefix
+    let contextualPrefix = "";
+    if (spendingSummary && typeof spendingSummary === "object") {
+      contextualPrefix = `[User spending context: The user has logged ${spendingSummary.receiptCount || 0} receipt(s) totaling $${(spendingSummary.totalSpent || 0).toFixed(2)}. Category spending ratios and target budgets: ${JSON.stringify(spendingSummary.budgetUsage || {})}]\n`;
+    }
+
+    // Insert spending profile on the last user message to make it context-aware
+    if (contextualPrefix && contents.length > 0) {
+      const lastTurn = contents[contents.length - 1];
+      if (lastTurn.role === "user") {
+        lastTurn.parts[0].text = contextualPrefix + lastTurn.parts[0].text;
+      }
+    }
+
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: contents,
+      config: {
+        systemInstruction: "You are the SnapSpend AI Financial Coach, a friendly, extremely helpful, and realistic personal finance guide. Your role is to help users understand their spending behaviors, set actionable financial goals (Savings, Emergency Funds, Debt Reduction), and provide practical, creative tips to reduce spending (especially around grocery/dining/entertainment categories). Always address users with supportive and motivational language. Keep answers scannable with clear bolding and bullet points."
+      }
+    });
+
+    const replyText = response.text || "I was unable to formulate a response. Can you please rephrase your query?";
+    return res.json({ success: true, text: replyText, mode: "api" });
+
+  } catch (error: any) {
+    console.error("[SnapSpend Chat API Error]:", error);
+    res.status(500).json({
+      success: false,
+      error: "Our financial AI is briefly offline. Please try again in a moment.",
       details: error?.message || error
     });
   }

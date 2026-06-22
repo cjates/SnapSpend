@@ -24,6 +24,7 @@ import CategoryStats from "./components/CategoryStats";
 import HistoryList from "./components/HistoryList";
 import AuthModal from "./components/AuthModal";
 import ShareModal from "./components/ShareModal";
+import FinancialBuddy from "./components/FinancialBuddy";
 import { auth } from "./lib/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { 
@@ -243,17 +244,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16 font-sans text-slate-800" id="app-root-container">
-      {/* Mobile Iframe Security Cookie Info & Tab Bypass Banner */}
+      {/* Mobile Standalone View Suggestion Banner */}
       {isIframeMobile && (
-        <div className="bg-amber-500 text-slate-950 px-4 py-2.5 text-center text-xs font-bold flex flex-wrap items-center justify-center gap-2 relative z-50 border-b border-amber-600 shadow-md animate-fade-in" id="iframe-mobile-cookies-banner">
-          <span>🔒 Strict browser cookie rules may block cloud database sync in this preview.</span>
+        <div className="bg-emerald-500 text-slate-950 px-4 py-2.5 text-center text-xs font-bold flex flex-wrap items-center justify-center gap-2 relative z-50 border-b border-emerald-600 shadow-md animate-fade-in" id="iframe-mobile-cookies-banner">
+          <span>🚀 Open in a Standalone Tab for direct, full-screen smartphone and camera access!</span>
           <a 
             href={window.location.href} 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="underline text-slate-950 hover:text-black transition duration-150 inline-flex items-center gap-1 bg-white/30 hover:bg-white/40 px-2.5 py-1 rounded text-[11px] font-extrabold shadow-xs"
+            className="underline text-slate-950 hover:text-black transition duration-150 inline-flex items-center gap-1 bg-white/30 hover:bg-white/40 px-2.5 py-1 rounded text-[11px] font-extrabold shadow-sm"
           >
-            Launch in Standalone Tab ↗
+            Launch Standalone ↗
           </a>
         </div>
       )}
@@ -440,6 +441,9 @@ export default function App() {
           Model alias: <strong className="text-slate-600">models/gemini-3.5-flash</strong> • Built with Antigravity Agent Platform
         </p>
       </footer>
+
+      {/* Floating Sparkle Financial AI Assistant Coach */}
+      <FinancialBuddy receipts={receipts} budgets={budgets} />
     </div>
   );
 }
