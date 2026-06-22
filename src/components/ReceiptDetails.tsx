@@ -197,21 +197,21 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
                 <Plus className="w-3.5 h-3.5" /> Add Item
               </button>
             </div>
-
-            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs" id="items-table-wrapper">
+            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs animate-fade-in" id="items-table-wrapper">
               <table className="w-full text-left text-sm font-sans">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-450 font-bold text-[11px] uppercase tracking-wider">
                   <tr>
                     <th className="py-3 px-4">Item Name</th>
-                    <th className="py-3 px-4 w-20 text-center">Qty</th>
+                    <th className="py-3 px-4 w-[140px]">Category Override</th>
+                    <th className="py-3 px-4 w-18 text-center">Qty</th>
                     <th className="py-3 px-4 w-28 text-right">Price</th>
-                    <th className="py-3 px-4 w-12 text-center"></th>
+                    <th className="py-3 px-4 w-10 text-center"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {lineItems.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">
+                      <td colSpan={5} className="py-8 text-center text-slate-400 text-xs shadow-inner">
                         No items added yet. Click &quot;Add Item&quot; to begin.
                       </td>
                     </tr>
@@ -224,23 +224,39 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
                             value={item.name}
                             onChange={(e) => handleUpdateItem(idx, "name", e.target.value)}
                             className="w-full px-2 py-1.5 focus:bg-white border border-transparent focus:border-slate-200 outline-none rounded-lg text-sm text-slate-800 font-medium transition"
+                            placeholder="Item description"
                             id={`item-name-${idx}`}
                           />
                         </td>
-                        <td className="py-2 px-4">
+                        <td className="py-2 px-2">
+                          <select
+                            value={item.category || ""}
+                            onChange={(e) => handleUpdateItem(idx, "category", e.target.value as ExpenseCategory)}
+                            className="w-full px-2 py-1.5 bg-slate-50/70 hover:bg-white border border-slate-200 focus:border-slate-800 outline-none rounded-lg text-xs capitalize text-slate-700 transition font-medium cursor-pointer"
+                            id={`item-category-${idx}`}
+                          >
+                            <option value="">-- Use Main --</option>
+                            {CATEGORIES.map((cat) => (
+                              <option key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-2 px-2 text-center">
                           <input
                             type="number"
                             min="1"
                             step="1"
                             value={item.quantity || 1}
                             onChange={(e) => handleUpdateItem(idx, "quantity", e.target.value)}
-                            className="w-full px-1 py-1.5 focus:bg-white text-center border border-transparent focus:border-slate-200 outline-none rounded-lg text-sm text-slate-700 transition font-mono"
+                            className="w-12 mx-auto px-1 py-1.5 focus:bg-white text-center border border-transparent focus:border-slate-200 outline-none rounded-lg text-sm text-slate-700 transition font-mono"
                             id={`item-qty-${idx}`}
                           />
                         </td>
                         <td className="py-2 px-4 text-right">
                           <div className="relative flex items-center justify-end">
-                            <span className="text-slate-450 text-xs absolute left-2 font-mono">$</span>
+                            <span className="text-slate-400 text-xs absolute left-2 font-mono">$</span>
                             <input
                               type="number"
                               step="0.01"
@@ -256,7 +272,7 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
-                            className="p-1 rounded-md text-slate-300 hover:text-slate-900 transition cursor-pointer"
+                            className="p-1 rounded-md text-slate-300 hover:text-rose-600 transition cursor-pointer"
                             title="Delete item"
                             id={`delete-item-${idx}`}
                           >

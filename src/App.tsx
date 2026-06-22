@@ -1,39 +1,129 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, Trash2, Download, RefreshCw, LayoutDashboard, FileText, Check, ShieldCheck, AlertCircle } from "lucide-react";
-import { Receipt } from "./types";
+import { 
+  Sparkles, 
+  Trash2, 
+  Download, 
+  RefreshCw, 
+  LayoutDashboard, 
+  FileText, 
+  Check, 
+  ShieldCheck, 
+  AlertCircle, 
+  Cloud, 
+  CloudOff, 
+  LogIn, 
+  User as UserIcon, 
+  LogOut,
+  Camera,
+  DollarSign
+} from "lucide-react";
+import { Receipt, ExpenseCategory } from "./types";
 import ReceiptScanner from "./components/ReceiptScanner";
 import ReceiptDetails from "./components/ReceiptDetails";
 import CategoryStats from "./components/CategoryStats";
 import HistoryList from "./components/HistoryList";
+import AuthModal from "./components/AuthModal";
+import ShareModal from "./components/ShareModal";
+import { auth } from "./lib/firebase";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { 
+  dbSaveReceipt, 
+  dbDeleteReceipt, 
+  dbFetchReceipts, 
+  dbSaveBudgets, 
+  dbFetchBudgets 
+} from "./lib/db";
+
+const DEFAULT_BUDGETS: Record<ExpenseCategory, number> = {
+  groceries: 200,
+  dining: 150,
+  transport: 100,
+  shopping: 150,
+  utilities: 155,
+  entertainment: 100,
+  other: 80
+};
 
 export default function App() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [budgets, setBudgets] = useState<Record<ExpenseCategory, number>>(DEFAULT_BUDGETS);
   const [currentScannedData, setCurrentScannedData] = useState<(Omit<Receipt, "id" | "scannedAt"> & { imagePreview?: string }) | null>(null);
+  
+  // App modals & notification toggles
   const [isScanning, setIsScanning] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [loadingCloud, setLoadingCloud] = useState(false);
 
-  // Load active session from localStorage to ensure data resilience
+  // User auth state tracking
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Listen to Auth State Updates
   useEffect(() => {
-    try {
-      const persisted = localStorage.getItem("snapspend_receipts");
-      if (persisted) {
-        setReceipts(JSON.parse(persisted));
-      }
-    } catch (e) {
-      console.error("Failed to load snapspend persisted state", e);
-    }
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoadingCloud(true);
+      if (user) {
+        setCurrentUser(user);
+        try {
+          // Fetch Cloud Data
+          const cloudReceipts = await dbFetchReceipts(user.uid);
+          const cloudBudgets = await dbFetchBudgets(user.uid);
 
-  // Sync receipts list to localStorage on every update
-  const saveReceipts = (updated: Receipt[]) => {
-    setReceipts(updated);
-    try {
-      localStorage.setItem("snapspend_receipts", JSON.stringify(updated));
-    } catch (e) {
-      console.error("Failed to persist snapspend state", e);
-    }
-  };
+          // Silent Local Merger: check local storage items
+          const localString = localStorage.getItem("snapspend_receipts");
+          const localBudgetsString = localStorage.getItem("snapspend_budgets");
+
+          let finalReceipts = [...cloudReceipts];
+          if (localString) {
+            const localReceipts = JSON.parse(localString) as Receipt[];
+            const unsynced = localReceipts.filter(lr => !cloudReceipts.some(cr => cr.id === lr.id));
+            if (unsynced.length > 0) {
+              // Upload unsynced local receipts to cloud
+              for (const rc of unsynced) {
+                await dbSaveReceipt(user.uid, rc);
+              }
+              finalReceipts = [...unsynced, ...finalReceipts];
+            }
+          }
+
+          let finalBudgets = cloudBudgets || DEFAULT_BUDGETS;
+          if (!cloudBudgets && localBudgetsString) {
+            finalBudgets = JSON.parse(localBudgetsString);
+            await dbSaveBudgets(user.uid, finalBudgets);
+          }
+
+          setReceipts(finalReceipts);
+          setBudgets(finalBudgets);
+          
+          localStorage.setItem("snapspend_receipts", JSON.stringify(finalReceipts));
+          localStorage.setItem("snapspend_budgets", JSON.stringify(finalBudgets));
+          showToast(`Synced cloud account ${user.email} successfully.`);
+        } catch (e) {
+          console.error("Failed to sync cloud data for user:", e);
+          showToast("Cloud sync failed. Operating offline.");
+        }
+      } else {
+        // Logged Out Sequence
+        setCurrentUser(null);
+        try {
+          const localRec = localStorage.getItem("snapspend_receipts");
+          const localBud = localStorage.getItem("snapspend_budgets");
+          
+          if (localRec) setReceipts(JSON.parse(localRec));
+          else setReceipts([]);
+
+          if (localBud) setBudgets(JSON.parse(localBud));
+          else setBudgets(DEFAULT_BUDGETS);
+        } catch (e) {
+          console.error("Local recovery error:", e);
+        }
+      }
+      setLoadingCloud(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -46,125 +136,188 @@ export default function App() {
     showToast("Receipt parsed successfully! Please review the details.");
   };
 
-  const handleApproveReceipt = (approved: Omit<Receipt, "id" | "scannedAt">) => {
+  // Save Receipts and keep cloud database & localStorage synced
+  const handleApproveReceipt = async (approved: Omit<Receipt, "id" | "scannedAt">) => {
     const newReceipt: Receipt = {
       ...approved,
       id: "rcpt_" + Math.random().toString(36).substr(2, 9),
       scannedAt: new Date().toISOString()
     };
+    
     const updated = [newReceipt, ...receipts];
-    saveReceipts(updated);
+    setReceipts(updated);
+    localStorage.setItem("snapspend_receipts", JSON.stringify(updated));
+
+    if (currentUser) {
+      try {
+        await dbSaveReceipt(currentUser.uid, newReceipt);
+      } catch (err) {
+        showToast("Logged receipt offline. Will retry cloud sync.");
+      }
+    }
+
     setCurrentScannedData(null);
     showToast(`Added receipt from ${approved.merchant} to your report.`);
   };
 
-  const handleDeleteReceipt = (id: string) => {
+  const handleDeleteReceipt = async (id: string) => {
     const merchantName = receipts.find(r => r.id === id)?.merchant || "Receipt";
     const updated = receipts.filter((r) => r.id !== id);
-    saveReceipts(updated);
+    setReceipts(updated);
+    localStorage.setItem("snapspend_receipts", JSON.stringify(updated));
+
+    if (currentUser) {
+      try {
+        await dbDeleteReceipt(currentUser.uid, id);
+      } catch (err) {
+        showToast("Error removing on cloud. Deleted locally.");
+      }
+    }
     showToast(`Removed receipt from ${merchantName}.`);
   };
 
-  const handleResetSession = () => {
+  const handleUpdateBudget = async (category: ExpenseCategory, amount: number) => {
+    const updatedBudgets = {
+      ...budgets,
+      [category]: amount
+    };
+    setBudgets(updatedBudgets);
+    localStorage.setItem("snapspend_budgets", JSON.stringify(updatedBudgets));
+
+    if (currentUser) {
+      try {
+        await dbSaveBudgets(currentUser.uid, updatedBudgets);
+      } catch (err) {
+        console.error("Failed to sync updated budget to Firestore:", err);
+      }
+    }
+  };
+
+  const handleResetSession = async () => {
     if (window.confirm("Are you sure you want to clear your active spending report and start a brand-new session?")) {
-      saveReceipts([]);
+      setReceipts([]);
+      localStorage.setItem("snapspend_receipts", JSON.stringify([]));
+
+      if (currentUser) {
+        try {
+          // Cleans cloud receipts logs
+          for (const r of receipts) {
+            await dbDeleteReceipt(currentUser.uid, r.id);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      
       setCurrentScannedData(null);
       showToast("Session reset. Start scanning fresh receipts!");
     }
   };
 
-  // Generate a clean summary text representing the full expense report
-  const handleExportTextSummary = () => {
-    const total = receipts.reduce((sum, r) => sum + r.total, 0);
-    const tax = receipts.reduce((sum, r) => sum + r.tax, 0);
-    const categoryTotals: Record<string, number> = {};
-    receipts.forEach(r => {
-      categoryTotals[r.category] = Number(((categoryTotals[r.category] || 0) + r.total).toFixed(2));
-    });
-
-    let summary = `=========================================\n`;
-    summary += `       SNAPSPEND EXPENSE REPORT          \n`;
-    summary += `=========================================\n`;
-    summary += `Generated: ${new Date().toLocaleDateString()} @ ${new Date().toLocaleTimeString()}\n`;
-    summary += `Total scanned receipts: ${receipts.length}\n`;
-    summary += `Grand Total Spend: $${total.toFixed(2)}\n`;
-    summary += `Total Estimated Tax: $${tax.toFixed(2)}\n\n`;
-    
-    summary += `SPENDING BY CATEGORY:\n`;
-    Object.entries(categoryTotals).forEach(([cat, amt]) => {
-      summary += `- ${cat.toUpperCase()}: $${amt.toFixed(2)}\n`;
-    });
-    summary += `\n`;
-
-    summary += `ITEMIZED TRANSACTION LOG:\n`;
-    receipts.forEach((r, idx) => {
-      summary += `${idx + 1}. [${r.date}] ${r.merchant} (${r.category.toUpperCase()}) - $${r.total.toFixed(2)} [Tax: $${r.tax.toFixed(2)}]\n`;
-      r.lineItems.forEach(i => {
-        summary += `   • ${i.name} - $${i.price.toFixed(2)} (Qty: ${i.quantity || 1})\n`;
-      });
-    });
-    summary += `\n=========================================\n`;
-    summary += `Thank you for using SnapSpend!`;
-
-    // Download compiled text as string attachment
-    const blob = new Blob([summary], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `SnapSpend_Report_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-    showToast("Downloaded expense report as TXT summary!");
+  const handleSignOut = async () => {
+    if (window.confirm("Sign out of SnapSpend Cloud? Offline local progress is retained.")) {
+      try {
+        await signOut(auth);
+        showToast("Signed out. Operating in guest sandbox.");
+      } catch (err) {
+        showToast("Sign out unsuccessful.");
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16 font-sans text-slate-800" id="app-root-container">
       {/* Toast Alert Banner */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-xl shadow-lg flex items-center gap-3 border border-slate-850 animate-slide-up text-xs font-semibold" id="status-toast">
+        <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-xl shadow-lg flex items-center gap-3 border border-slate-800 animate-slide-up text-xs font-semibold animate-fade-in" id="status-toast">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Main App Bar / Header */}
-      <header className="bg-white border-b border-slate-250 sticky top-0 z-40" id="app-main-header">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center shadow-xs" id="app-logo">
-              <div className="w-4 h-4 border-2 border-white rounded-full"></div>
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40" id="app-main-header">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center shrink-0 relative shadow-sm border border-slate-800" id="app-logo">
+              <Camera className="w-4 h-4 text-slate-100" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold leading-none border border-white">
+                $
+              </div>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900" id="app-brand-name">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight" id="app-brand-name">
                 SnapSpend
               </h1>
-              <p className="text-[10px] text-slate-400 font-mono tracking-wider font-semibold uppercase">
+              <p className="text-[10px] text-slate-400 font-mono tracking-wider font-semibold uppercase leading-none mt-0.5">
                 📱 camera-to-expense mobile assistant
               </p>
             </div>
           </div>
 
-          {/* Connected environment tags & actions */}
-          <div className="flex items-center gap-4" id="header-action-panel">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-700 text-[10px] font-semibold font-mono rounded-md border border-slate-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-900" />
-              Gemini Vision Ready
-            </span>
+          {/* Connected environment tags & authentication controls */}
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto" id="header-action-panel">
+            <div className="flex items-center gap-2">
+              {currentUser ? (
+                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-mono rounded-md border border-emerald-100 animate-fade-in">
+                  <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                  Synced
+                </span>
+              ) : (
+                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-mono rounded-md border border-slate-200 animate-fade-in">
+                  <CloudOff className="w-3.5 h-3.5 text-slate-400" />
+                  Offline Sandbox
+                </span>
+              )}
 
-            {receipts.length > 0 && (
-              <div className="flex items-center gap-2">
+              {/* Account Interaction Interface Badge */}
+              {loadingCloud ? (
+                <div className="w-6 h-6 border-2 border-slate-350 border-t-slate-850 rounded-full animate-spin" />
+              ) : currentUser ? (
+                <div className="flex items-center gap-2 bg-slate-55 border border-slate-200 p-1 pl-2.5 rounded-lg text-xs font-medium animate-fade-in" id="header-user-badge">
+                  <UserIcon className="w-3.5 h-3.5 text-slate-600" />
+                  <span className="max-w-[120px] truncate text-[11px] font-semibold text-slate-700">
+                    {currentUser.email?.split("@")[0]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="p-1 hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded-md transition cursor-pointer"
+                    title="Sign Out"
+                    id="signout-trigger-btn"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={handleExportTextSummary}
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm cursor-pointer transition"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-3 py-1.5 border border-slate-300 hover:border-slate-800 text-slate-800 font-semibold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                  id="login-modal-trigger"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Cloud Sync
+                </button>
+              )}
+            </div>
+
+            {/* General Export Actions */}
+            {receipts.length > 0 && (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm cursor-pointer transition flex items-center gap-1"
                   id="export-report-btn"
                 >
-                  <Download className="w-3.5 h-3.5 inline mr-1" /> Export Report
+                  <Download className="w-3.5 h-3.5" /> 
+                  <span>Share Report</span>
                 </button>
+                
                 <button
                   type="button"
                   onClick={handleResetSession}
-                  className="p-2 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50/20 cursor-pointer transition text-xs border border-slate-200"
+                  className="p-2 text-slate-450 hover:text-rose-600 rounded-md hover:bg-rose-50/20 cursor-pointer transition text-xs border border-slate-200"
                   title="Reset session journal"
                   id="header-reset-btn"
                 >
@@ -180,7 +333,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-6 sm:px-8 py-8" id="layout-main-panel">
         {/* If review state is active, render verification table */}
         {currentScannedData ? (
-          <div className="max-w-5xl mx-auto space-y-4" id="review-active-grid">
+          <div className="max-w-5xl mx-auto space-y-4 animate-fade-in" id="review-active-grid">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
               <AlertCircle className="w-4 h-4 text-slate-900 shrink-0" />
               <span>We extracted the receipt details below! Review the itemized breakdown before approving it.</span>
@@ -199,7 +352,7 @@ export default function App() {
           /* Normal state: Scanner on top/left, analytics/journal below */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="main-working-grid">
             {/* Left and central workspace */}
-            <div className="lg:col-span-8 space-y-8" id="workspace-lhs">
+            <div className="lg:col-span-8 space-y-8 animate-fade-in" id="workspace-lhs">
               
               <ReceiptScanner
                 onScanComplete={handleScanComplete}
@@ -216,12 +369,32 @@ export default function App() {
             {/* Right-hand side aggregation stats */}
             <div className="lg:col-span-4" id="workspace-rhs">
               <div className="sticky top-24" id="sticky-rhs-container">
-                <CategoryStats receipts={receipts} />
+                <CategoryStats 
+                  receipts={receipts} 
+                  budgets={budgets}
+                  onUpdateBudget={handleUpdateBudget}
+                />
               </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* Auth Modal Component */}
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        showToast={showToast}
+      />
+
+      {/* Share / Export Modal Component */}
+      <ShareModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        receipts={receipts}
+        showToast={showToast}
+      />
 
       {/* Styled Footer */}
       <footer className="max-w-7xl mx-auto px-6 sm:px-8 text-center text-xs text-slate-400 pt-12 border-t border-slate-200" id="main-footer">

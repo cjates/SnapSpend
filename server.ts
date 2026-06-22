@@ -147,10 +147,11 @@ app.post("/api/scan", async (req, res) => {
     const textPart = {
       text: `Analyze this paper receipt carefully. Extract the merchant, date, each line item with its cost price and quantity, sales tax, and the total spent amount.
 Also, classify the entire receipt into one of these spending categories: 'groceries', 'dining', 'transport', 'shopping', 'utilities', 'entertainment', 'other'.
+For each line item in 'lineItems', determine if its category differs from the overall receipt category. If so, classify that item as well ('groceries', 'dining', 'transport', 'shopping', 'utilities', 'entertainment', 'other'). Otherwise, leave empty.
 Requirements:
 1. Provide a highly accurate merchant name.
 2. The date must be strictly in YYYY-MM-DD format. If no date is found or readable in the receipt, fallback to today's date: ${new Date().toISOString().split("T")[0]}.
-3. Every individual item from the breakdown list must be placed in the 'lineItems' array with its friendly name, total price, and its quantity (default to 1 if not explicitly specified).
+3. Every individual item from the breakdown list must be placed in the 'lineItems' array with its friendly name, total price, optional category override if different from receipt overall category, and its quantity (default to 1 if not explicitly specified).
 4. Parse tax as a number. Set to 0 if not found.
 5. Parse total as a positive decimal number representing the absolute net total paid.`
     };
@@ -173,7 +174,8 @@ Requirements:
                 properties: {
                   name: { type: Type.STRING, description: "Item description or name on the receipt." },
                   price: { type: Type.NUMBER, description: "Total price of this line item." },
-                  quantity: { type: Type.INTEGER, description: "Quantity of this item." }
+                  quantity: { type: Type.INTEGER, description: "Quantity of this item." },
+                  category: { type: Type.STRING, description: "Optional item category override (groceries, dining, transport, shopping, utilities, entertainment, other or empty)." }
                 },
                 required: ["name", "price"]
               }

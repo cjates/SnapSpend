@@ -4,6 +4,7 @@ export interface LineItem {
   name: string;
   price: number;
   quantity?: number;
+  category?: ExpenseCategory | ""; // Optional category override
 }
 
 export interface Receipt {
