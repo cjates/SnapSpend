@@ -1,0 +1,6 @@
+{
+  "name": "SnapSpend",
+  "description": "Snap Spend turns a photo of a paper receipt into an itemized categorical expense report, updating real-time session totals.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
