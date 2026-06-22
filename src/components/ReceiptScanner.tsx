@@ -145,12 +145,12 @@ export default function ReceiptScanner({ onScanComplete, isScanning, setIsScanni
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-8" id="scanner-container">
+    <div className="bg-[#0f172a] rounded-xl border border-slate-800 shadow-lg p-6 md:p-8 space-y-8 text-white" id="scanner-container">
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 font-sans" id="scanner-title">
+        <h2 className="text-xl font-bold tracking-tight text-white font-sans" id="scanner-title">
           1. Snap or Upload Receipt
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-slate-300 mt-1">
           Take a clear snapshot of your receipt. Gemini AI parses dates, items, tax, total, and assigns categories perfectly.
         </p>
       </div>
@@ -167,19 +167,19 @@ export default function ReceiptScanner({ onScanComplete, isScanning, setIsScanni
         />
 
         {isScanning ? (
-          <div className="border-2 border-dashed border-slate-400 bg-slate-50/60 rounded-xl p-12 text-center aspect-video flex flex-col items-center justify-center space-y-4" id="scanning-indicator">
+          <div className="border-2 border-dashed border-slate-600/80 bg-slate-800/50 rounded-xl p-12 text-center aspect-video flex flex-col items-center justify-center space-y-4" id="scanning-indicator">
             <div className="relative flex items-center justify-center">
-              <div className="animate-ping absolute inline-flex h-12 w-12 rounded-full bg-slate-900 opacity-20"></div>
-              <div className="relative rounded-full p-4 bg-slate-900 text-white shadow-md animate-pulse">
+              <div className="animate-ping absolute inline-flex h-12 w-12 rounded-full bg-emerald-400 opacity-20"></div>
+              <div className="relative rounded-full p-4 bg-slate-800 text-emerald-400 shadow-md animate-pulse border border-slate-700">
                 <Camera className="w-8 h-8" />
               </div>
             </div>
             
             <div className="space-y-2 max-w-sm">
-              <p className="text-slate-900 font-bold text-lg animate-pulse font-sans" id="scan-pulse-text">
+              <p className="text-white font-bold text-lg animate-pulse font-sans" id="scan-pulse-text">
                 Analyzing Receipt...
               </p>
-              <p className="text-xs text-slate-500 font-mono tracking-tight min-h-6 transition-all duration-300" id="scan-step-text">
+              <p className="text-xs text-slate-300 font-mono tracking-tight min-h-6 transition-all duration-300" id="scan-step-text">
                 ⚡ {LOADING_STEPS[loadingStep]}
               </p>
             </div>
@@ -187,17 +187,17 @@ export default function ReceiptScanner({ onScanComplete, isScanning, setIsScanni
         ) : (
           <div 
             onClick={triggerCamera}
-            className="border-2 border-dashed border-slate-300 hover:border-slate-800 hover:bg-slate-50/40 cursor-pointer rounded-xl p-10 md:p-14 text-center transition-all duration-200 group flex flex-col items-center justify-center space-y-4"
+            className="border-2 border-dashed border-slate-700 hover:border-emerald-405 hover:bg-slate-800/40 cursor-pointer rounded-xl p-10 md:p-14 text-center transition-all duration-200 group flex flex-col items-center justify-center space-y-4"
             id="scanner-dropzone"
           >
-            <div className="rounded-xl p-4 bg-slate-50 text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all">
+            <div className="rounded-xl p-4 bg-slate-800 text-slate-300 group-hover:bg-emerald-600 group-hover:text-white transition-all border border-slate-700">
               <Camera className="w-10 h-10 group-hover:scale-110 transition-transform" />
             </div>
             <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-white mb-2">
-                <Sparkles className="w-3.5 h-3.5" /> Gemini Powered
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#1e293b] text-emerald-400 mb-2 border border-slate-700">
+                <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Gemini Powered
               </span>
-              <p className="text-base text-slate-900 font-bold tracking-tight font-sans">
+              <p className="text-base text-white font-bold tracking-tight font-sans">
                 TAP TO SCAN RECEIPT
               </p>
               <p className="text-xs text-slate-400">
@@ -209,8 +209,8 @@ export default function ReceiptScanner({ onScanComplete, isScanning, setIsScanni
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-3 text-rose-800" id="scanner-error">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-500" />
+        <div className="p-4 bg-rose-950/30 border border-rose-900/50 rounded-xl flex items-start gap-3 text-rose-200" id="scanner-error">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-400" />
           <div className="text-xs space-y-1">
             <p className="font-semibold">Unable to analyze receipt</p>
             <p>{error}</p>
@@ -220,11 +220,11 @@ export default function ReceiptScanner({ onScanComplete, isScanning, setIsScanni
 
       {/* Preset demo receipts carousel */}
       <div className="pt-2" id="demo-presets-container">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
             No receipt in hand? Try Demo Presets
           </span>
-          <span className="text-xs text-slate-400 font-mono italic">
+          <span className="text-[11px] text-slate-500 font-mono italic">
             Instant OCR Simulator
           </span>
         </div>
@@ -238,16 +238,16 @@ export default function ReceiptScanner({ onScanComplete, isScanning, setIsScanni
                 type="button"
                 disabled={isScanning}
                 onClick={() => handleSelectPreset(tmpl.index)}
-                className="flex flex-col items-start text-left p-3.5 rounded-xl border border-slate-200 hover:border-slate-800 hover:bg-slate-50 bg-slate-50/50 disabled:opacity-50 transition-all font-sans cursor-pointer group"
+                className="flex flex-col items-start text-left p-3.5 rounded-xl border border-slate-700 hover:border-emerald-400 hover:bg-slate-800 bg-slate-800/30 disabled:opacity-50 transition-all font-sans cursor-pointer group"
                 id={`preset-${tmpl.index}`}
               >
-                <div className="p-2 rounded-lg bg-white shadow-xs text-slate-600 group-hover:text-slate-900 group-hover:bg-slate-100 transition-colors mb-2">
+                <div className="p-2 rounded-lg bg-slate-900 text-slate-350 group-hover:text-emerald-400 group-hover:bg-slate-800 border border-slate-700 transition-colors mb-2">
                   <IconComponent className="w-4 h-4" />
                 </div>
-                <p className="text-xs font-bold text-slate-800 truncate w-full">
+                <p className="text-xs font-bold text-slate-100 truncate w-full">
                   {tmpl.name}
                 </p>
-                <p className="text-[10px] text-slate-500 mt-0.5">
+                <p className="text-[10px] text-slate-405 mt-0.5 leading-tight">
                   {tmpl.desc}
                 </p>
               </button>

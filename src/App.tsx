@@ -229,26 +229,26 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 pb-16 font-sans text-slate-800" id="app-root-container">
       {/* Toast Alert Banner */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-xl shadow-lg flex items-center gap-3 border border-slate-800 animate-slide-up text-xs font-semibold animate-fade-in" id="status-toast">
+        <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-xl shadow-xl flex items-center gap-3 border border-slate-850 animate-slide-up text-xs font-semibold animate-fade-in" id="status-toast">
           <Check className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Main App Bar / Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40" id="app-main-header">
+      <header className="bg-[#0f172a] border-b border-slate-800 sticky top-0 z-40" id="app-main-header">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="w-10 h-10 bg-[#0c1e3d] rounded-xl flex items-center justify-center shrink-0 relative shadow-md border border-[#142d54] overflow-hidden select-none" id="app-logo">
-              {/* Green dollar sign integrated behind */}
-              <span className="absolute text-emerald-400 font-extrabold text-2xl tracking-normal pointer-events-none font-mono opacity-60 z-0 select-none animate-pulse">
+            <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center shrink-0 relative shadow-md border border-slate-705 overflow-hidden select-none" id="app-logo">
+              {/* Blue/emerald dollar sign integrated behind */}
+              <span className="absolute text-emerald-400 font-extrabold text-2xl tracking-normal pointer-events-none font-mono opacity-40 z-0 select-none">
                 $
               </span>
               {/* White camera on top */}
               <Camera className="w-4.5 h-4.5 text-white relative z-10" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight" id="app-brand-name">
+              <h1 className="text-xl font-bold tracking-tight text-white leading-tight" id="app-brand-name">
                 SnapSpend
               </h1>
               <p className="text-[10px] text-slate-400 font-mono tracking-wider font-semibold uppercase leading-none mt-0.5">
@@ -261,12 +261,12 @@ export default function App() {
           <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto" id="header-action-panel">
             <div className="flex items-center gap-2">
               {currentUser ? (
-                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-mono rounded-md border border-emerald-100 animate-fade-in">
-                  <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 text-emerald-400 text-[10px] font-mono rounded-md border border-slate-700 animate-fade-in">
+                  <Cloud className="w-3.5 h-3.5 text-emerald-400" />
                   Synced
                 </span>
               ) : (
-                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-mono rounded-md border border-slate-200 animate-fade-in">
+                <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 text-slate-300 text-[10px] font-mono rounded-md border border-slate-700 animate-fade-in">
                   <CloudOff className="w-3.5 h-3.5 text-slate-400" />
                   Offline Sandbox
                 </span>
@@ -274,17 +274,17 @@ export default function App() {
 
               {/* Account Interaction Interface Badge */}
               {loadingCloud ? (
-                <div className="w-6 h-6 border-2 border-slate-350 border-t-slate-850 rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-emerald-600 border-t-white rounded-full animate-spin" />
               ) : currentUser ? (
-                <div className="flex items-center gap-2 bg-slate-55 border border-slate-200 p-1 pl-2.5 rounded-lg text-xs font-medium animate-fade-in" id="header-user-badge">
-                  <UserIcon className="w-3.5 h-3.5 text-slate-600" />
-                  <span className="max-w-[120px] truncate text-[11px] font-semibold text-slate-700">
+                <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 p-1 pl-2.5 rounded-lg text-xs font-medium animate-fade-in" id="header-user-badge">
+                  <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="max-w-[120px] truncate text-[11px] font-semibold text-slate-200">
                     {currentUser.email?.split("@")[0]}
                   </span>
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="p-1 hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded-md transition cursor-pointer"
+                    className="p-1 hover:bg-rose-950/40 hover:text-rose-400 text-slate-300 rounded-md transition cursor-pointer"
                     title="Sign Out"
                     id="signout-trigger-btn"
                   >
@@ -295,7 +295,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="px-3 py-1.5 border border-slate-300 hover:border-slate-800 text-slate-800 font-semibold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-slate-700 hover:border-emerald-400 text-slate-200 hover:text-white bg-slate-800 font-semibold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
                   id="login-modal-trigger"
                 >
                   <LogIn className="w-3.5 h-3.5" /> Cloud Sync
@@ -309,7 +309,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsShareModalOpen(true)}
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md shadow-sm cursor-pointer transition flex items-center gap-1"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-md shadow-sm cursor-pointer transition flex items-center gap-1"
                   id="export-report-btn"
                 >
                   <Download className="w-3.5 h-3.5" /> 
@@ -319,7 +319,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={handleResetSession}
-                  className="p-2 text-slate-450 hover:text-rose-600 rounded-md hover:bg-rose-50/20 cursor-pointer transition text-xs border border-slate-200"
+                  className="p-2 text-emerald-400 hover:text-rose-400 rounded-md bg-[#132c20]/50 hover:bg-rose-950/20 cursor-pointer transition text-xs border border-[#1c382a]"
                   title="Reset session journal"
                   id="header-reset-btn"
                 >
@@ -336,8 +336,8 @@ export default function App() {
         {/* If review state is active, render verification table */}
         {currentScannedData ? (
           <div className="max-w-5xl mx-auto space-y-4 animate-fade-in" id="review-active-grid">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <AlertCircle className="w-4 h-4 text-slate-900 shrink-0" />
+            <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-100 bg-slate-900 p-4 rounded-xl border border-slate-850 shadow-lg">
+              <AlertCircle className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>We extracted the receipt details below! Review the itemized breakdown before approving it.</span>
             </div>
             
@@ -403,10 +403,10 @@ export default function App() {
       />
 
       {/* Styled Footer */}
-      <footer className="max-w-7xl mx-auto px-6 sm:px-8 text-center text-xs text-slate-400 pt-12 border-t border-slate-200" id="main-footer">
+      <footer className="max-w-7xl mx-auto px-6 sm:px-8 text-center text-xs text-slate-450 pt-12 border-t border-slate-200" id="main-footer">
         <p>© {new Date().getFullYear()} SnapSpend • Intelligent Mobile Expense Assistant.</p>
         <p className="mt-1 text-[10px] font-mono">
-          Model alias: <strong>models/gemini-3.5-flash</strong> • Built with Antigravity Agent Platform
+          Model alias: <strong className="text-slate-600">models/gemini-3.5-flash</strong> • Built with Antigravity Agent Platform
         </p>
       </footer>
     </div>
