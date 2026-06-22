@@ -140,7 +140,7 @@ export default function CategoryStats({ receipts, budgets, onUpdateBudget }: Cat
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 flex flex-col gap-5" id="summary-category-report">
         <div>
           <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
-            <span>Overall Ledger Summary</span>
+            <span>Total Budget Tracker</span>
             <span className="text-[10px] font-mono lowercase text-slate-400 font-normal">monthly tracking</span>
           </h3>
           <p className="text-[11px] text-slate-400 mt-1">

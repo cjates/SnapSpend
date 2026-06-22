@@ -239,11 +239,13 @@ export default function App() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40" id="app-main-header">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center shrink-0 relative shadow-sm border border-slate-800" id="app-logo">
-              <Camera className="w-4 h-4 text-slate-100" />
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold leading-none border border-white">
+            <div className="w-10 h-10 bg-[#0c1e3d] rounded-xl flex items-center justify-center shrink-0 relative shadow-md border border-[#142d54] overflow-hidden select-none" id="app-logo">
+              {/* Green dollar sign integrated behind */}
+              <span className="absolute text-emerald-400 font-extrabold text-2xl tracking-normal pointer-events-none font-mono opacity-60 z-0 select-none animate-pulse">
                 $
-              </div>
+              </span>
+              {/* White camera on top */}
+              <Camera className="w-4.5 h-4.5 text-white relative z-10" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight" id="app-brand-name">
@@ -349,32 +351,36 @@ export default function App() {
             />
           </div>
         ) : (
-          /* Normal state: Scanner on top/left, analytics/journal below */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="main-working-grid">
-            {/* Left and central workspace */}
-            <div className="lg:col-span-8 space-y-8 animate-fade-in" id="workspace-lhs">
-              
-              <ReceiptScanner
-                onScanComplete={handleScanComplete}
-                isScanning={isScanning}
-                setIsScanning={setIsScanning}
-              />
+          /* Normal state: Scanner and stats side-by-side, journal at bottom */
+          <div className="space-y-8 animate-fade-in" id="main-working-grid-wrapper">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="main-working-grid">
+              {/* Left and central workspace */}
+              <div className="lg:col-span-8 space-y-8" id="workspace-lhs">
+                <ReceiptScanner
+                  onScanComplete={handleScanComplete}
+                  isScanning={isScanning}
+                  setIsScanning={setIsScanning}
+                />
+              </div>
 
+              {/* Right-hand side aggregation stats */}
+              <div className="lg:col-span-4" id="workspace-rhs">
+                <div className="sticky top-24" id="sticky-rhs-container">
+                  <CategoryStats 
+                    receipts={receipts} 
+                    budgets={budgets}
+                    onUpdateBudget={handleUpdateBudget}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* All Scans History at the bottom */}
+            <div id="workspace-bottom">
               <HistoryList
                 receipts={receipts}
                 onDelete={handleDeleteReceipt}
               />
-            </div>
-
-            {/* Right-hand side aggregation stats */}
-            <div className="lg:col-span-4" id="workspace-rhs">
-              <div className="sticky top-24" id="sticky-rhs-container">
-                <CategoryStats 
-                  receipts={receipts} 
-                  budgets={budgets}
-                  onUpdateBudget={handleUpdateBudget}
-                />
-              </div>
             </div>
           </div>
         )}

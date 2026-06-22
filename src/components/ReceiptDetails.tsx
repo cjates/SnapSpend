@@ -22,11 +22,32 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
   const [merchant, setMerchant] = useState(scannedData.merchant);
   const [date, setDate] = useState(scannedData.date);
   const [category, setCategory] = useState<ExpenseCategory>(scannedData.category);
-  const [lineItems, setLineItems] = useState<LineItem[]>(scannedData.lineItems || []);
+  const [lineItems, setLineItems] = useState<LineItem[]>(() => {
+    return (scannedData.lineItems || []).map((item) => {
+      const isNameEmptyOrUnknown = !item.name || 
+        item.name.trim() === "" || 
+        item.name.toLowerCase() === "unknown" || 
+        item.name.toLowerCase() === "item" || 
+        item.name.toLowerCase() === "unknown item";
+      
+      return {
+        ...item,
+        name: isNameEmptyOrUnknown ? "Unknown Item" : item.name
+      };
+    });
+  });
   const [tax, setTax] = useState<number>(scannedData.tax);
   const [total, setTotal] = useState<number>(scannedData.total);
   const [imagePreview] = useState(scannedData.imagePreview);
   const [warning, setWarning] = useState<string | null>(null);
+
+  // Check if any items are unknown items
+  const hasUnknownItems = lineItems.some(
+    (item) => !item.name || 
+              item.name.trim() === "" || 
+              item.name.toLowerCase() === "unknown" || 
+              item.name.toLowerCase() === "unknown item"
+  );
 
   // Cross-verify sum of items matches the parsed grand total
   useEffect(() => {
@@ -129,6 +150,18 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
         </div>
       )}
 
+      {hasUnknownItems && (
+        <div className="p-4 bg-indigo-50 border border-indigo-150 text-indigo-900 rounded-xl text-xs flex items-start gap-3.5 shadow-xs animate-fade-in" id="unknown-item-warning-banner">
+          <AlertTriangle className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-indigo-950 uppercase tracking-wide">⚠️ Unknown Item Detected in Receipt</p>
+            <p className="leading-relaxed font-semibold text-indigo-800">
+              One or more items on your receipt has an unrecognized or unknown title. We loaded them as &quot;Unknown Item&quot; but kept the category and amount exactly as scanned. Please alter any names as you choose before saving!
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Grid container: Receipt info on left, photo on right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="scanned-grid-split">
         {/* Invoice configuration pane */}
@@ -216,18 +249,35 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
                       </td>
                     </tr>
                   ) : (
-                    lineItems.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-2 px-4">
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) => handleUpdateItem(idx, "name", e.target.value)}
-                            className="w-full px-2 py-1.5 focus:bg-white border border-transparent focus:border-slate-200 outline-none rounded-lg text-sm text-slate-800 font-medium transition"
-                            placeholder="Item description"
-                            id={`item-name-${idx}`}
-                          />
-                        </td>
+                    lineItems.map((item, idx) => {
+                      const isItemUnknown = !item.name || 
+                        item.name.trim() === "" || 
+                        item.name.toLowerCase() === "unknown" || 
+                        item.name.toLowerCase() === "unknown item";
+
+                      return (
+                        <tr key={idx} className={`hover:bg-slate-50/50 transition-colors ${isItemUnknown ? "bg-indigo-50/10" : ""}`}>
+                          <td className="py-2 px-4">
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => handleUpdateItem(idx, "name", e.target.value)}
+                                className={`w-full px-2 py-1.5 focus:bg-white border outline-none rounded-lg text-sm transition ${
+                                  isItemUnknown 
+                                    ? "border-indigo-200 bg-indigo-50/40 text-indigo-950 font-bold placeholder-indigo-300" 
+                                    : "border-transparent focus:border-slate-200 text-slate-800 font-medium"
+                                }`}
+                                placeholder="Item description"
+                                id={`item-name-${idx}`}
+                              />
+                              {isItemUnknown && (
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-indigo-600 bg-indigo-100 border border-indigo-200 px-1 rounded uppercase tracking-wider scale-90 pointer-events-none">
+                                  please edit
+                                </span>
+                              )}
+                            </div>
+                          </td>
                         <td className="py-2 px-2">
                           <select
                             value={item.category || ""}
@@ -280,7 +330,8 @@ export default function ReceiptDetails({ scannedData, onApprove, onCancel }: Rec
                           </button>
                         </td>
                       </tr>
-                    ))
+                    );
+                  })
                   )}
                 </tbody>
               </table>

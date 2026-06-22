@@ -35,7 +35,7 @@ const MOCK_RECEIPTS = [
     lineItems: [
       { name: "Grande Caramel Macchiato", price: 5.45, quantity: 1 },
       { name: "Butter Croissant", price: 3.75, quantity: 1 },
-      { name: "Stainless Tumbler 16oz", price: 19.95, quantity: 1 }
+      { name: "", price: 19.95, quantity: 1, category: "shopping" }
     ],
     tax: 2.33,
     total: 31.48

@@ -49,10 +49,10 @@ export default function HistoryList({ receipts, onDelete }: HistoryListProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight" id="history-header">
-            Session Scan Journal
+            All Scans
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            Running log of all captured receipts scanned during your active logging session.
+            Running log of all captured receipts and spending details.
           </p>
         </div>
 
@@ -192,7 +192,14 @@ export default function HistoryList({ receipts, onDelete }: HistoryListProps) {
                           <div className="divide-y divide-slate-100">
                             {receipt.lineItems.map((item, idx) => (
                               <div key={idx} className="p-2.5 flex items-center justify-between gap-4 text-slate-700">
-                                <span className="font-semibold text-slate-800">{item.name}</span>
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-slate-800">{item.name}</span>
+                                  {item.category && (
+                                    <span className="text-[9px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded w-max mt-0.5 capitalize font-semibold">
+                                      {item.category}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="font-mono text-slate-400 shrink-0">
                                   {item.quantity && item.quantity > 1 ? `${item.quantity} × ` : ""}
                                   <strong className="text-slate-900">${item.price.toFixed(2)}</strong>
