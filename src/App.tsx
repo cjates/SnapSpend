@@ -59,6 +59,22 @@ export default function App() {
   // User auth state tracking
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
+  // Cross-origin iframe cookie detection state for mobile devices
+  const [isIframeMobile, setIsIframeMobile] = useState(false);
+
+  useEffect(() => {
+    try {
+      const isIframe = window.self !== window.top;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isIframe && isMobile) {
+        setIsIframeMobile(true);
+      }
+    } catch (e) {
+      // If parent context blocks window.self querying, assume encapsulated iframe context
+      setIsIframeMobile(true);
+    }
+  }, []);
+
   // Listen to Auth State Updates
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -227,6 +243,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16 font-sans text-slate-800" id="app-root-container">
+      {/* Mobile Iframe Security Cookie Info & Tab Bypass Banner */}
+      {isIframeMobile && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2.5 text-center text-xs font-bold flex flex-wrap items-center justify-center gap-2 relative z-50 border-b border-amber-600 shadow-md animate-fade-in" id="iframe-mobile-cookies-banner">
+          <span>🔒 Strict browser cookie rules may block cloud database sync in this preview.</span>
+          <a 
+            href={window.location.href} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="underline text-slate-950 hover:text-black transition duration-150 inline-flex items-center gap-1 bg-white/30 hover:bg-white/40 px-2.5 py-1 rounded text-[11px] font-extrabold shadow-xs"
+          >
+            Launch in Standalone Tab ↗
+          </a>
+        </div>
+      )}
+
       {/* Toast Alert Banner */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-slate-900 text-white rounded-xl shadow-xl flex items-center gap-3 border border-slate-850 animate-slide-up text-xs font-semibold animate-fade-in" id="status-toast">

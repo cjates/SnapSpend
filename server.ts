@@ -12,6 +12,17 @@ const PORT = 3000;
 // Setup JSON body parser with increased limits for Base64 receipt images
 app.use(express.json({ limit: "15mb" }));
 
+// Middleware to set secure, SameSite=None, and Partitioned (CHIPS) security cookies
+// required for robust operation in modern mobile browsers and cross-site iframe environments.
+app.use((req, res, next) => {
+  res.setHeader(
+    "Set-Cookie",
+    "snapspend_security_cookie=secured_iframe_session; Path=/; Secure; SameSite=None; Partitioned; HttpOnly; Max-Age=2592000"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  next();
+});
+
 // Mock receipts database for fallback or instant-demo presets
 const MOCK_RECEIPTS = [
   {
