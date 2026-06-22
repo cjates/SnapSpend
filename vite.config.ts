@@ -13,14 +13,14 @@ if (!fs.existsSync(configPath)) {
       configPath,
       JSON.stringify(
         {
-          apiKey: "",
-          authDomain: "",
-          projectId: "",
-          storageBucket: "",
-          messagingSenderId: "",
-          appId: "",
-          measurementId: "",
-          firestoreDatabaseId: ""
+          apiKey: "AIzaSyA1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6",
+          authDomain: "snapspend-mock.firebaseapp.com",
+          projectId: "snapspend-mock",
+          storageBucket: "snapspend-mock.appspot.com",
+          messagingSenderId: "123456789012",
+          appId: "1:123456789012:web:a1b2c3d4e5f6g7h8",
+          measurementId: "G-MOCK123456",
+          firestoreDatabaseId: "(default)"
         },
         null,
         2
